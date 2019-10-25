@@ -1,28 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="X-UA-Compatible" content="ie=edge">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css">
-<link rel="stylesheet" href="style.css">
-<title>Title</title>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css">
+   <link rel="stylesheet" href="style.css">
+   <title>Air Quality Index</title>
+   <style>
+      .select-options{        
+         display: flex;
+         justify-content:  space-between;
+      }
+      .select-options div{     
+         min-width: 250px;
+      }
+      .section-main{
+         width: 50%;
+         margin-right: auto;
+         margin-left: auto;
+      }     
+   </style>
 </head>
 <body>
-   <header>National Air Quality Index</header>
-   <form>
-      <fieldset class="form-group">
-         <legend>Local Air Quality</legend>
-         <div class="form-group">
-            <label for="stateID"></label>
-            <input type="text" id="stateID" placeholder="Select State">
+   <header>National Air Quality Index</header>  
+   <form >
+      <section class="section-main">
+         <fieldset class="form-group">     
+            <legend class="text-center">Local Air Quality</legend>         
+               <section class="select-options">            
+                  <div class="form-group ">
+                     <label class="form-control-label" for="stateID"></label>
+                     <select class="form-control" id="stateID">
+                        <option>Choose State</option>
+                        <option value="washington">washington</option>
+                        <option value="oregon">oregon</option>
+                        <option value="california">california</option>     
+                     </select>             
+                  </div> <!-- form-group -->            
+                  <div class="form-group ">
+                     <label class="form-control-label" for="cityID"></label>
+                     <select class="form-control id="cityID">
+                        <option>Choose City</option>
+                     </select>  
+                  </div><!-- form-group -->
+               </section>       
+         </fieldset>
+         <div class="text-right">
+            <button class="btn btn-primary" type="submit">Submit</button>
          </div>
-         <div class="form-group">
-            <label for="v"></label>
-            <input type="text" id="cityID" placeholder="Select City">
-         </div>
-      </fieldset>
+      </section>
    </form>
    <footer></footer>
 
