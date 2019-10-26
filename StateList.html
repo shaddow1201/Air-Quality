@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en"> 
+    <head> 
+        <meta http-equiv="content-type" content="text/html; charset=utf-8"> 
+        <title>Title Goes Here</title> 
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script>
+            let selectedState, selectedCity, aqFullDataSet, URL, cityDataSet, cityLookupErrorCount;
+            $(document).ready(function(){
+                // initialization function.
+                stateLookup();
+            })
+
+            // *********************************************
+            // stateLookup - returns listing of US states
+            // *********************************************
+            function stateLookup(){
+                // State Listing URL
+                URL = "https://webapisample09.azurewebsites.net/api/state"
+                // Ajax call to get State data
+                $.ajax({
+                    url: URL,
+                    type: "GET",
+                    success: function(result){
+                        // set unselected state
+                        $('#stateList').append(`<option value="SELECT">SELECT</option>`);
+                        // parse data for each state.
+                        $.each(result.data.data, function(k,v){
+                            $('#stateList').append(`<option value="${v.state}">${v.state}</option>`);
+                        });
+                    }
+                })
+            }
+
+            // *********************************************
+            // cityLookup - returns listing of cities in a state
+            // *********************************************
+            function cityLookup(){
+                URL = "https://webapisample09.azurewebsites.net/api/state?state="
+                selectedState = $("#stateList").children("option:selected").val();
+                if (selectedState != "SELECT"){
+                    let URLHolder = URL + selectedState;
+                    $.ajax({
+                        url: URLHolder,
+                        type: "GET",
+                        success: function(result){
+                            // clears options incase there is already data in there.
+                            $('#cityList')
+                                .find('option')
+                                .remove()
+                                .end()
+                            ;
+                            cityDataSet = result.data.data;
+                            $('#cityList').append(`<option value="SELECT">SELECT</option>`);
+                            $.each(cityDataSet, function(k,v){
+                                $('#cityList').append(`<option value="${v.city}">${v.city}</option>`);
+                            });
+                        }
+                    })
+                }
+            }
+
+            // *********************************************
+            // acquireCityData - returns a states cities AQ data
+            // *********************************************
+            function acquireCityData(){
+                // get selected values
+                selectedState= $("#stateList").children("option:selected").val(); 
+                selectedCity = $("#cityList").children("option:selected").val(); 
+                aqFullDataSet = [];
+                // make series of ajax calls to get full city data.
+                $.each(cityDataSet, function(k,v){
+                    let stateCityURL=`https://webapisample09.azurewebsites.net/api/city?state=${selectedState}&city=${v.city}`;
+                    // the .then forces the waiting till each call is complete.
+                    getData(stateCityURL).then(function(result){
+                        //push data into aqFullDataset object.
+                        //console.log(result.data.data.city + ":" + result.data.data.state + ":" + result.data.data.location.coordinates + ":" + result.data.data.current.pollution.aqius);
+                        currObject = []; // creates empty object
+                        // push relevant array objects into new object.
+                        currObject.push(result.data.data.city, result.data.data.location.coordinates, result.data.data.current.pollution.aqius)
+                        // push current on to full AQ dataset.
+                        aqFullDataSet.push(currObject)
+                    });
+                })
+                //console.log("missing city Count: " + cityDataSet.length - aqFullDataSet.length);
+                //console.log(aqFullDataSet);
+            }
+
+            // ajax web call function 
+            function getData(ajaxUrl){
+                return $.ajax({
+                    url: ajaxUrl,
+                    type: 'GET',
+                })
+            }
+
+            function doComparrison(){
+                console.log("cityDatasetLength: " + cityDataSet.length);
+                console.log("AQDatasetLength: " + aqFullDataSet.length);
+                let missingData = cityDataSet.length - aqFullDataSet.length;
+                console.log("missing data count: " + missingData);
+                let selectedCityLongitude, selectedCityLatitude, selectedCityAirQuality;
+                // run thru get selected city values
+                $.each(aqFullDataSet, function(k,v){
+                    //console.log(k + ":" + v[0] + ": longitude: "+ v[1][0] + ": latitude: " + v[1][1] + ": Quality: " + v[2]);
+                    if (selectedCity == v[0]){
+                        selectedCityLatitude = v[1][0];
+                        selectedCityLongitude = v[1][1];
+                        selectedCityAirQuality = v[2];
+                    }
+                })
+                console.log("selected City details;")
+                console.log("SelectedCity: " + selectedCity + " Lat:" + selectedCityLatitude + " Long:" + selectedCityLongitude + " AQI:" + selectedCityAirQuality);
+
+                // Get cities with better Air Quality
+                let betterAirQualityCities = [];
+                // sort 1.  only take better air quality
+                $.each(aqFullDataSet, function(k,v){
+                    let currAirQuality;
+                    //console.log(k + ":" + v[0] + ": longitude: "+ v[1][0] + ": latitude: " + v[1][1] + ": Quality: " + v[2]);
+                    if (selectedCity != v[0]){ // ignore base city for comparrison.
+                        if (v[2] < selectedCityAirQuality){ // if better air quality add to object array
+                            betterAirQualityCities.push(v); 
+                        }
+                    }
+                })
+                //console.log("better AirQuality cities")
+                //console.log(betterAirQualityCities);
+                // sort 2 by distance
+                let distanceArray = [];
+                let currentCityAndDistance = [];
+                $.each(betterAirQualityCities, function(k,v){
+                    //console.log("cityName: "+ v[0]);
+                    let distance = getDistance(selectedCityLatitude, selectedCityLongitude, v[1][0], v[1][1]);
+                    let currentCityAndDistance = [];
+                    currentCityAndDistance.push(v[0],distance,v[2]);
+                    distanceArray.push(currentCityAndDistance);
+                })
+                let topCities = [];
+                // set over the top values.
+                topCities[0] = ["",100000,""];
+                topCities[1] = ["",100000,""];
+                topCities[2] = ["",100000,""];
+                $.each(distanceArray, function(k,v){
+                    //console.log(v);
+                    let swapped = 0;
+                    let temp, temp2;
+                        // 3 topCity positions to check.
+                    if (parseInt(v[1]) < parseInt(topCities[0][1])){
+                        temp = topCities[0];
+                        temp2 = topCities[1];
+                        topCities[2] = temp2;
+                        topCities[1] = temp;
+                        topCities[0] = v;
+                        swapped = 1;
+                    }
+                    if (swapped != 1){
+                        if (parseInt(v[1]) < parseInt(topCities[1][1])){
+                            temp2 = topCities[1];
+                            topCities[2] = temp2;
+                            topCities[1] = v;
+                            swapped=1;
+                        }
+                    }
+                    if (swapped != 1){
+                        if(parseInt(v[1]) < parseInt(topCities[2][1])){
+                            topCities[2] = v;
+                        }
+                    }
+                    //console.log(topCities);
+                })
+                console.log("Top Cities");
+                console.log(topCities);
+            }    
+            // Helper functions
+            function getDistance(lat1, long1, lat2, long2){
+                // Reference: https://www.movable-type.co.uk/scripts/latlong.html
+                // Haversine forumula:
+                let R =  3958.756; // miles // 6371e3; // metres
+                let φ1 = toRadians(lat1);
+                let φ2 = toRadians(lat2);
+                let Δφ = toRadians(lat2-lat1);
+                let Δλ = toRadians(long2-long1);
+
+                let a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                let c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                let d = R * c;
+                return d;
+            }
+
+            function toRadians(value){
+                return value * Math.PI / 100;
+            }
+            
+
+        </script>
+    </head> 
+    <body>
+            <select id='stateList' onChange='cityLookup()' ></select>
+            <select id='cityList' onChange='acquireCityData()'></select>
+            <button id='AQLookupBtn' onClick='doComparrison()'>Air Quality Review</button>
+            <div id='AQDiv'></div>
+    </body> 
+</html>
