@@ -117,58 +117,29 @@
                 // sort 1.  only take better air quality
                 $.each(aqFullDataSet, function(k,v){
                     let currAirQuality;
+                    let distance = getDistance(selectedCityLatitude, selectedCityLongitude, v[1][0], v[1][1]).toFixed(2);
+                    aqFullDataSet[k][3] = distance;
                     //console.log(k + ":" + v[0] + ": longitude: "+ v[1][0] + ": latitude: " + v[1][1] + ": Quality: " + v[2]);
                     if (selectedCity != v[0]){ // ignore base city for comparrison.
                         if (v[2] < selectedCityAirQuality){ // if better air quality add to object array
                             betterAirQualityCities.push(v); 
                         }
+
                     }
                 })
-                //console.log("better AirQuality cities")
-                //console.log(betterAirQualityCities);
-                // sort 2 by distance
-                let distanceArray = [];
-                let currentCityAndDistance = [];
-                $.each(betterAirQualityCities, function(k,v){
-                    //console.log("cityName: "+ v[0]);
-                    let distance = getDistance(selectedCityLatitude, selectedCityLongitude, v[1][0], v[1][1]);
-                    let currentCityAndDistance = [];
-                    currentCityAndDistance.push(v[0],distance,v[2]);
-                    distanceArray.push(currentCityAndDistance);
-                })
+                let sortedAQArray = bubble_Sort(aqFullDataSet);
+                sortedAQArray.shift(); // removes the reference city from the array.
                 let topCities = [];
+                betterCityCount = 0
                 // set over the top values.
-                topCities[0] = ["",100000,""];
-                topCities[1] = ["",100000,""];
-                topCities[2] = ["",100000,""];
-                $.each(distanceArray, function(k,v){
-                    //console.log(v);
-                    let swapped = 0;
-                    let temp, temp2;
-                        // 3 topCity positions to check.
-                    if (parseFloat(v[1]) < parseFloat(topCities[0][1])){
-                        temp = topCities[0];
-                        temp2 = topCities[1];
-                        topCities[2] = temp2;
-                        topCities[1] = temp;
-                        topCities[0] = v;
-                        swapped = 1;
+                $.each(sortedAQArray, function(k,v){
+                    if (v[2] < selectedCityAirQuality && betterCityCount < 3){
+                        topCities[betterCityCount] = v;
+                        betterCityCount = betterCityCount + 1;
                     }
-                    if (swapped != 1){
-                        if (parseFloat(v[1]) < parseFloat(topCities[1][1])){
-                            temp2 = topCities[1];
-                            topCities[2] = temp2;
-                            topCities[1] = v;
-                            swapped=1;
-                        }
-                    }
-                    if (swapped != 1){
-                        if(parseFloat(v[1]) < parseFloat(topCities[2][1])){
-                            topCities[2] = v;
-                        }
-                    }
-                    //console.log(topCities);
                 })
+                
+                
                 console.log("Top Cities");
                 console.log(topCities);
             }    
@@ -193,7 +164,27 @@
                 return value * Math.PI / 100;
             }
             
-
+            function bubble_Sort(a){
+                var swapp;
+                var n = a.length-1;
+                var x=a;
+                do {
+                    swapp = false;
+                    for (var i=0; i < n; i++)
+                    {
+                        //console.log( x[i]);
+                        if (parseFloat(x[i][3]) > parseFloat(x[i+1][3]))
+                        {
+                           var temp = x[i];
+                            x[i] = x[i+1];
+                           x[i+1] = temp;
+                           swapp = true;
+                        }
+                    }
+                    n--;
+                } while (swapp);
+                return x; 
+            }
         </script>
     </head> 
     <body>
